@@ -48,6 +48,12 @@ FastJetProcessor::FastJetProcessor() : Processor( "FastJetProcessor" ) {
                            "MCParticle" );
   registerOutputCollection( LCIO::RECONSTRUCTEDPARTICLE, "jetOut", "The identified jets", _lcJetOutName, "JetOut" );
 
+  registerOutputCollection( LCIO::RECONSTRUCTEDPARTICLE, "recParticleOut",
+                            "a list of all reconstructed particles used to "
+                            "make jets. If no value specified collection is "
+                            "not created",
+                            _lcParticleOutName, "" );
+
   // the parameters. See description for details
   StringVec defAlgoAndParam;
   defAlgoAndParam.push_back( "kt_algorithm" );
@@ -64,6 +70,11 @@ FastJetProcessor::FastJetProcessor() : Processor( "FastJetProcessor" ) {
                               "particles. Usually there is no need to use "
                               "anything else than 4-Vector addition: E_scheme",
                               _jetRecoSchemeName, string( "E_scheme" ) );
+
+  registerProcessorParameter( "storeParticlesInJets",
+                              "Store the list of particles that were clustered "
+                              "into jets in the recParticleOut collection",
+                              _storeParticlesInJets, false );
 
   StringVec defClusterMode;
   defClusterMode.push_back( "Inclusive" );
@@ -429,6 +440,12 @@ void FastJetProcessor::processEvent( LCEvent* evt ) {
 
   // create output collection and save every jet with its particles in it
   IMPL::LCCollectionVec* lccJetsOut = new IMPL::LCCollectionVec( LCIO::RECONSTRUCTEDPARTICLE );
+  // create output collection and save every particle which contributes to a jet
+  IMPL::LCCollectionVec* lccParticlesOut( NULL );
+  if ( _storeParticlesInJets ) {
+    lccParticlesOut = new IMPL::LCCollectionVec( LCIO::RECONSTRUCTEDPARTICLE );
+    lccParticlesOut->setSubset( true );
+  }
 
   vector<fastjet::PseudoJet>::iterator it;
 
@@ -437,9 +454,19 @@ void FastJetProcessor::processEvent( LCEvent* evt ) {
     // particles to it
     ReconstructedParticle* rec = getRecPar( ( *it ), cs.constituents( *it ) );
     lccJetsOut->addElement( rec );
+
+    if ( _storeParticlesInJets ) {
+      for ( unsigned int n = 0; n < cs.constituents( *it ).size(); ++n ) {
+        ReconstructedParticle* p = dynamic_cast<ReconstructedParticle*>(
+            _reconstructedPars->getElementAt( ( cs.constituents( *it ) )[ n ].user_index() ) );
+        lccParticlesOut->addElement( p );
+      }
+    }
   }
 
   evt->addCollection( lccJetsOut, _lcJetOutName );
+  if ( _storeParticlesInJets )
+    evt->addCollection( lccParticlesOut, _lcParticleOutName );
 
   // special case for the exclusive jet mode: we can save the transition y_cut
   // value

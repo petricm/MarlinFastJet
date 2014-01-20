@@ -54,13 +54,13 @@ class FastJetProcessor : Processor {
 
   /** Called for every run.
    */
-  virtual void processRunHeader( LCRunHeader* run ){};
+  virtual void processRunHeader( LCRunHeader* ){};
 
   /** Called for every event - the working horse.
    */
   virtual void processEvent( LCEvent* evt );
 
-  virtual void check( LCEvent* evt ){};
+  virtual void check( LCEvent* ){};
 
   /** Called after data processing for clean up.
    */
@@ -69,6 +69,7 @@ class FastJetProcessor : Processor {
  private:
   // the LC Collection names for input/output
   string _lcParticleInName;
+  string _lcParticleOutName;
   string _lcJetOutName;
 
   // the cluster modes
@@ -109,11 +110,12 @@ class FastJetProcessor : Processor {
 
   LCCollection* _reconstructedPars;
 
-  int _statsFoundJets;
-  int _statsNrEvents;
-  int _statsNrSkippedEmptyEvents;
-  int _statsNrSkippedFixedNrJets;
-  int _statsNrSkippedMaxIterations;
+  int  _statsFoundJets;
+  int  _statsNrEvents;
+  int  _statsNrSkippedEmptyEvents;
+  int  _statsNrSkippedFixedNrJets;
+  int  _statsNrSkippedMaxIterations;
+  bool _storeParticlesInJets;
 };
 
 ostream& operator<<( ostream& out, EClusterMode& m );
