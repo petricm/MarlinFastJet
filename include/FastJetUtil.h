@@ -591,6 +591,11 @@ PseudoJetList FastJetUtil::doIterativeInclusiveClustering( PseudoJetList& pjList
 
     if ( nJets == _requestedNumberOfJets ) {  // if the number of jets is
                                               // correct: success!
+      delete pluginSisCone;
+      pluginSisCone = NULL;
+      delete pluginSisConeSph;
+      pluginSisConeSph = NULL;
+      delete jetDefinition;
       break;
 
     } else if ( nJets < _requestedNumberOfJets ) {
