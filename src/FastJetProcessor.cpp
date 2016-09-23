@@ -95,7 +95,7 @@ void FastJetProcessor::init() {
   _statsNrSkippedMaxIterations = 0;
 }
 
-ostream& operator<<( ostream& out, EClusterMode& m ) {
+std::ostream& operator<<( std::ostream& out, EClusterMode& m ) {
   switch ( m ) {
     case OWN_inclusiveIteration:
       out << "InclusiveIterativeNJets";
@@ -130,10 +130,10 @@ void FastJetProcessor::processEvent( LCEvent* evt ) {
     }
 
   } catch ( DataNotAvailableException e ) {
-    streamlog_out( WARNING ) << e.what() << endl << "Skipping" << endl;
+    streamlog_out( WARNING ) << e.what() << std::endl << "Skipping" << std::endl;
 
-    // create dummy empty collection only in case there are processor that
-    // need the presence of them in later stages
+    // create dummy empty collection only in case there are processor that need
+    // the presence of them in later stages
 
     // create output collection and save every jet with its particles in it
     IMPL::LCCollectionVec* lccJetsOut = new IMPL::LCCollectionVec( LCIO::RECONSTRUCTEDPARTICLE );
@@ -158,11 +158,13 @@ void FastJetProcessor::processEvent( LCEvent* evt ) {
 
   PseudoJetList pjList = _fju->convertFromRecParticle( particleIn );
 
-  vector<fastjet::PseudoJet> jets;
+  PseudoJetList jets;
   try {
     jets = _fju->clusterJets( pjList, _reconstructedPars );
   } catch ( SkippedFixedNrJetException& e ) {
     _statsNrSkippedFixedNrJets++;
+  } catch ( SkippedMaxIterationException& e ) {
+    _statsNrSkippedMaxIterations++;
   }
 
   _statsNrEvents++;
@@ -178,7 +180,7 @@ void FastJetProcessor::processEvent( LCEvent* evt ) {
     lccParticlesOut->setSubset( true );
   }
 
-  vector<fastjet::PseudoJet>::iterator it;
+  PseudoJetList::iterator it;
 
   for ( it = jets.begin(); it != jets.end(); it++ ) {
     // create a reconstructed particle for this jet, and add all the containing
@@ -206,16 +208,14 @@ void FastJetProcessor::processEvent( LCEvent* evt ) {
     // meaningful)
     LCParametersImpl& lccJetParams( (LCParametersImpl&)lccJetsOut->parameters() );
 
-    lccJetParams.setValue( string( "d_{n-1,n}" ), (float)_fju->_cs->exclusive_dmerge( nrJets - 1 ) );
-    lccJetParams.setValue( string( "d_{n,n+1}" ), (float)_fju->_cs->exclusive_dmerge( nrJets ) );
-
-    lccJetParams.setValue( string( "y_{n-1,n}" ), (float)_fju->_cs->exclusive_ymerge( nrJets - 1 ) );
-    lccJetParams.setValue( string( "y_{n,n+1}" ), (float)_fju->_cs->exclusive_ymerge( nrJets ) );
+    lccJetParams.setValue( std::string( "d_{n-1,n}" ), (float)_fju->_cs->exclusive_dmerge( nrJets - 1 ) );
+    lccJetParams.setValue( std::string( "d_{n,n+1}" ), (float)_fju->_cs->exclusive_dmerge( nrJets ) );
+    lccJetParams.setValue( std::string( "y_{n-1,n}" ), (float)_fju->_cs->exclusive_ymerge( nrJets - 1 ) );
+    lccJetParams.setValue( std::string( "y_{n,n+1}" ), (float)_fju->_cs->exclusive_ymerge( nrJets ) );
   }
 }
 
-EVENT::ReconstructedParticle* FastJetProcessor::getRecPar( fastjet::PseudoJet&               fj,
-                                                           const vector<fastjet::PseudoJet>& constituents ) {
+EVENT::ReconstructedParticle* FastJetProcessor::getRecPar( fastjet::PseudoJet& fj, const PseudoJetList& constituents ) {
   // create a ReconstructedParticle that saves the jet
   ReconstructedParticleImpl* jet = new ReconstructedParticleImpl();
 
@@ -245,5 +245,5 @@ void FastJetProcessor::end() {
                            << " - Skipped Events after max nr of iterations reached: " << _statsNrSkippedMaxIterations
                            << " - Skipped Search for Fixed Nr Jets (due to insufficient nr of "
                               "particles):"
-                           << _statsNrSkippedFixedNrJets << endl;
+                           << _statsNrSkippedFixedNrJets << std::endl;
 }
