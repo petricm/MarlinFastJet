@@ -3,12 +3,14 @@
  *
  *  Created on: 25.05.2010
  *      Author: Lars Weuste (MPP Munich) - weuste@mpp.mpg.de
- *      		iterative inclusive algorithm based on design by Marco Battaglia
- * (CERN) - Marco.Battaglia@cern.ch
+ *			iterative inclusive algorithm based on design by Marco Battaglia (CERN)
+ *- Marco.Battaglia@cern.ch
  */
 
 #ifndef FASTJETPROCESSOR_H_
 #define FASTJETPROCESSOR_H_
+
+#include "EClusterMode.h"
 
 #include "EVENT/LCCollection.h"
 #include "EVENT/ReconstructedParticle.h"
@@ -28,15 +30,10 @@ using namespace lcio;
 using namespace std;
 using namespace fastjet;
 
-// The enum, name and value of the enum for the Cluster Mode
-enum EClusterMode {
-  NONE                   = 0,
-  FJ_exclusive_yCut      = 1,  // exclusive clustering mode implemented in FastJet
-  FJ_exclusive_nJets     = 2,  // exclusive clustering mode implemented in FastJet
-  FJ_inclusive           = 4,  // inclusive "-"
-  OWN_inclusiveIteration = 8   // use FJ inclusive Clustering, but iterate until
-                               // we have the desired number of jets
-};
+// Forward Declaration
+class FastJetUtil;
+
+typedef vector<fastjet::PseudoJet> PseudoJetList;
 
 class FastJetProcessor : Processor {
  public:
@@ -66,45 +63,13 @@ class FastJetProcessor : Processor {
    */
   virtual void end();
 
+  friend class FastJetUtil;
+
  private:
   // the LC Collection names for input/output
   string _lcParticleInName;
   string _lcParticleOutName;
   string _lcJetOutName;
-
-  // the cluster modes
-  StringVec    _clusterModeNameAndParam;
-  string       _clusterModeName;
-  EClusterMode _clusterMode;
-  unsigned     _nrJets;
-  double       _yCut;
-  double       _minPt;
-  double       _minE;
-  void         initClusterMode();
-
-  // list of pseudo particles / jets
-  typedef vector<fastjet::PseudoJet> pseudojetList;
-  pseudojetList                      _pjList;
-
-  // helper functions to init the jet algorithms in general
-  void initJetAlgo();
-  bool isJetAlgo( string algo, int nrParams, int supportedModes );
-  StringVec               _jetAlgoNameAndParams;
-  string                  _jetAlgoName;
-  fastjet::JetDefinition* _jetAlgo;
-  fastjet::JetAlgorithm   _jetAlgoType;
-
-  void                         initRecoScheme();
-  string                       _jetRecoSchemeName;
-  fastjet::RecombinationScheme _jetRecoScheme;
-
-  void              initStrategy();
-  string            _strategyName;
-  fastjet::Strategy _strategy;
-
-  vector<fastjet::PseudoJet> doIterativeInclusiveClustering();
-
-  void convertFromRecParticle( LCCollection* recCol );
 
   EVENT::ReconstructedParticle* getRecPar( fastjet::PseudoJet& fj, const vector<fastjet::PseudoJet>& constituents );
 
@@ -116,6 +81,14 @@ class FastJetProcessor : Processor {
   int  _statsNrSkippedFixedNrJets;
   int  _statsNrSkippedMaxIterations;
   bool _storeParticlesInJets;
+
+  FastJetUtil* _fju;
+
+ private:
+  FastJetProcessor( const FastJetProcessor& rhs );
+  FastJetProcessor& operator=( const FastJetProcessor& ) {
+    return *this;
+  }
 };
 
 ostream& operator<<( ostream& out, EClusterMode& m );
